@@ -2,11 +2,11 @@
 #define EAP_IDENTITY "al037092" //if connecting from another corporation, use identity@organisation.domain in Eduroam 
 #define EAP_PASSWORD "10495262" //your Eduroam password
 
-#define WIFI_SSID "AU_1_16_IDIOMES"
-#define WIFI_PASSWORD "alumnes1920"
+//#define WIFI_SSID "AU_1_16_IDIOMES"
+//#define WIFI_PASSWORD "alumnes1920"
 
-//#define WIFI_SSID "Wifi-Casa 2.4GHz"
-//#define WIFI_PASSWORD "rgo74amm75amg02rmg07"
+#define WIFI_SSID "Wifi-Casa 2.4GHz"
+#define WIFI_PASSWORD "rgo74amm75amg02rmg07"
 
 int wifi_counter = 0;
 

@@ -1,9 +1,16 @@
-#define DISABLE_MQTT
+//#define DISABLE_MQTT
 
 #define MQTT_SERVER "192.168.1.94"
+#define MQTT_PORT 1010 // 1883
 
 #define MQTT_TOPIC_RESPONSE "esp32/response"
+#define MQTT_TOPIC_COMMANDS "esp32/commands"
 #define MQTT_TOPIC_TEST "esp32/test"
+#define MQTT_TOPIC_CONFIGURE_BUTTON_COMMAND "esp32/config/button/command/#"
+#define MQTT_TOPIC_CONFIGURE_BUTTON_COLOR "esp32/config/button/color/#"
+
+int neotrellis_colors[8 * 4];
+String neotrellis_commands[8 * 4];
 
 WiFiClient espClient;
 PubSubClient mqtt_client(espClient);
@@ -21,6 +28,22 @@ void callback(char *topic, byte *message, unsigned int length)
     messageTemp += (char)message[i];
   }
   Serial.println();
+
+  String topicText = String(topic);
+
+  String colorButtonTopicName = "esp32/config/button/color/";
+  String commandButtonTopicName = "esp32/config/button/command/";
+  if (topicText.startsWith(colorButtonTopicName))
+  {
+    String buttonId = topicText.substring(colorButtonTopicName.length());
+    neotrellis_colors[buttonId.toInt()] = messageTemp.toInt();
+    Serial.println("Changing color of: -" + buttonId + "- to -" + messageTemp + "-");
+  }else if (topicText.startsWith(commandButtonTopicName))
+  {
+    String buttonId = topicText.substring(commandButtonTopicName.length());
+    neotrellis_commands[buttonId.toInt()] = messageTemp;
+    Serial.println("Changing command of: -" + buttonId + "- to -" + messageTemp + "-");
+  }
 }
 
 void mqtt_connect()
@@ -32,7 +55,7 @@ void mqtt_connect()
   debug_("\n    Setting server \"");
   debug_(MQTT_SERVER);
   debug("\"...");
-  mqtt_client.setServer(MQTT_SERVER, 1883);
+  mqtt_client.setServer(MQTT_SERVER, MQTT_PORT);
   debug("    Setting callback...");
   mqtt_client.setCallback(callback);
 #endif
@@ -50,7 +73,9 @@ void mqtt_reconnect()
     {
       Serial.println("connected");
       // Subscribe
-      mqtt_client.subscribe("esp32/test");
+      mqtt_client.subscribe(MQTT_TOPIC_TEST);
+      mqtt_client.subscribe(MQTT_TOPIC_CONFIGURE_BUTTON_COLOR);
+      mqtt_client.subscribe(MQTT_TOPIC_CONFIGURE_BUTTON_COMMAND);
     }
     else
     {

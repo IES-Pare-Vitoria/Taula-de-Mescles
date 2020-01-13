@@ -1,5 +1,8 @@
+
 #define Y_DIM 4 //number of rows of key
 #define X_DIM 8 //number of columns of keys
+
+#define NEOTRELLIS_COUNT Y_DIM * X_DIM
 
 //create a matrix of trellis panels
 Adafruit_NeoTrellis t_array[Y_DIM / 4][X_DIM / 4] = {
@@ -14,10 +17,15 @@ Adafruit_MultiTrellis trellis((Adafruit_NeoTrellis *)t_array, Y_DIM / 4, X_DIM /
 //define a callback for key presses
 TrellisCallback blink(keyEvent evt)
 {
-
-    if (evt.bit.EDGE == SEESAW_KEYPAD_EDGE_RISING)
-        trellis.setPixelColor(evt.bit.NUM, 0xFF0000); //on rising
-    else if (evt.bit.EDGE == SEESAW_KEYPAD_EDGE_FALLING)
+    if (evt.bit.EDGE == SEESAW_KEYPAD_EDGE_RISING){
+        trellis.setPixelColor(evt.bit.NUM, neotrellis_colors[evt.bit.NUM]); //on rising
+        String cmd = neotrellis_commands[evt.bit.NUM];
+        if(cmd.length() > 0){
+            Serial.print("C-");
+            Serial.println(cmd);
+            mqtt_publish(MQTT_TOPIC_COMMANDS, cmd);
+        }
+    }else if (evt.bit.EDGE == SEESAW_KEYPAD_EDGE_FALLING)
         trellis.setPixelColor(evt.bit.NUM, 0); //off falling
 
     trellis.show();
@@ -33,6 +41,10 @@ void neotrellis_setup()
     {
         Serial.println("failed to begin trellis");
         return;
+    }
+
+    for(int c = 0; c < NEOTRELLIS_COUNT; c++){
+        neotrellis_colors[c] = 0xFFFFFF;
     }
 
     /* the array can be addressed as x,y or with the key number */

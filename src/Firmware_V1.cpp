@@ -17,10 +17,10 @@
 #include "network.h"
 #include "display.h"
 #include "mqtt.h"
+#include "neotrellis.h"
 #include "inputs.h"
 #include "dmx.h"
 #include "encoder.h"
-#include "neotrellis.h"
 
 unsigned long lastWifiCheck = 0;
 unsigned long lastReadSent = 0;
@@ -45,8 +45,10 @@ void setup() {
 
   dmx_setup();
 
+  display_print("WIFI");
   wifi_connect();
 
+  display_print("MQTT");
   mqtt_connect();
 
   neotrellis_setup();
