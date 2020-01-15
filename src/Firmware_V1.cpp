@@ -11,21 +11,30 @@
 
 #define DEBUG
 
+#define POT_1_PIN 4
+#define POT_2_PIN 15
+#define POT_3_PIN 34
+#define POT_4_PIN 35
+#define POT_5_PIN 26
+
+#define potCount 5
+int potPins[potCount] = { POT_1_PIN, POT_2_PIN, POT_3_PIN, POT_4_PIN, POT_5_PIN };
+int potReadings[potCount];
+
 #include "debug.h"
 
 #include "pref.h"
-#include "network.h"
-#include "display.h"
-#include "mqtt.h"
-#include "neotrellis.h"
-#include "inputs.h"
 #include "dmx.h"
+#include "mqtt.h"
+#include "inputs.h"
+#include "network.h"
+#include "commander.h"
+#include "display.h"
+#include "neotrellis.h"
 #include "encoder.h"
 
 unsigned long lastWifiCheck = 0;
 unsigned long lastReadSent = 0;
-
-#include "commander.h"
 
 void setup() {
   Serial.begin(115200);
@@ -53,6 +62,8 @@ void setup() {
 
   neotrellis_setup();
 
+  encoder_setup();
+
   display_print("IDLE");
   Serial.println("SYSTEM READY");
   Serial.println();
@@ -78,6 +89,8 @@ void loop() {
   rotary_loop();
 
   neotrellis_loop();
+
+  display_loop();
 
   dmx_tick();
 }
