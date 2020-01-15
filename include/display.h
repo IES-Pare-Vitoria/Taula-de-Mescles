@@ -1,9 +1,6 @@
 
 #define DISPLAY_ADDRESS 0x70
 
-#define MQTT_CHANNEL_BLINK_ON_TIME 1000
-#define MQTT_CHANNEL_BLINK_OFF_TIME 500
-
 Adafruit_AlphaNum4 alpha4 = Adafruit_AlphaNum4();
 
 unsigned long lastMQTTChannelBlink = 0;
@@ -34,13 +31,10 @@ void display_print(String message)
 void display_loop()
 {
     if (settingMQTTChannel)
-        if (millis() - lastMQTTChannelBlink > MQTT_CHANNEL_BLINK_ON_TIME + MQTT_CHANNEL_BLINK_OFF_TIME)
-        {
+        if (millis() - lastMQTTChannelBlink > mqttChannelBlinkOnTime + mqttChannelBlinkOffTime)
             lastMQTTChannelBlink = millis();
-        }
-        else if(millis() - lastMQTTChannelBlink > MQTT_CHANNEL_BLINK_ON_TIME){
+        else if(millis() - lastMQTTChannelBlink > mqttChannelBlinkOnTime)
             display_print("C   ");
-        }
         else
         {
             // TODO: Make function

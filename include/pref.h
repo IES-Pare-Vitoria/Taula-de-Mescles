@@ -9,11 +9,17 @@
 
 #define PREF_COMMAND_COUNT "btnCommandCount"
 
+#define PREF_DISPLAY_BLINK_ON "dispBlnkOn"
+#define PREF_DISPLAY_BLINK_OFF "dispBlnkOff"
+
 Preferences preferences;
 
-#define validKeysCount 2
-String validKeys[][2] = {
-  { PREF_ANALOG_READ_RESOLUTION, PREF_KEY_TYPE_INTEGER }, { PREF_ANALOG_READ_SAMPLES, PREF_KEY_TYPE_INTEGER }
+#define validKeysCount 4
+String validKeys[validKeysCount][2] = {
+  { PREF_ANALOG_READ_RESOLUTION, PREF_KEY_TYPE_INTEGER }, 
+  { PREF_ANALOG_READ_SAMPLES, PREF_KEY_TYPE_INTEGER }, 
+  { PREF_DISPLAY_BLINK_ON, PREF_KEY_TYPE_INTEGER }, 
+  { PREF_DISPLAY_BLINK_OFF, PREF_KEY_TYPE_INTEGER }
 };
 
 bool isValidKey(String key) {

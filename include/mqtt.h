@@ -10,6 +10,18 @@
 #define MQTT_TOPIC_CONFIGURE_BUTTON_COMMAND "esp32/config/button/command/#"
 #define MQTT_TOPIC_CONFIGURE_BUTTON_COLOR "esp32/config/button/color/#"
 #define MQTT_TOPIC_RESET_BUTTON "esp32/config/button/rst/#"
+#define MQTT_TOPIC_CONFIGURE_PARAMETER "esp32/config/param/#"
+
+// Those are just for parsing
+#define COLOR_BUTTON_TOPIC_NAME "esp32/config/button/color/"
+#define COMMAND_BUTTON_TOPIC_NAME "esp32/config/button/command/"
+#define RESET_BUTTON_TOPIC_NAME "esp32/config/button/rst/"
+#define CONFIGURE_PARAMETER_TOPIC_NAME "esp32/config/param/"
+
+#define MQTT_CHANNEL_BLINK_ON_TIME_DEFAULT 1000
+#define MQTT_CHANNEL_BLINK_OFF_TIME_DEFAULT 500
+int mqttChannelBlinkOnTime = MQTT_CHANNEL_BLINK_ON_TIME_DEFAULT;
+int mqttChannelBlinkOffTime = MQTT_CHANNEL_BLINK_OFF_TIME_DEFAULT;
 
 int neotrellis_colors[8 * 4];
 int commandsCount = 0;
@@ -17,6 +29,13 @@ String neotrellis_commands[8 * 4][2]; // [ buttonIndex, Command ]
 
 WiFiClient espClient;
 PubSubClient mqtt_client(espClient);
+
+void update_mqtt_cache()
+{
+  debug("    Updating cache...");
+  mqttChannelBlinkOnTime = preferences.getInt(PREF_DISPLAY_BLINK_ON, MQTT_CHANNEL_BLINK_ON_TIME_DEFAULT);
+  mqttChannelBlinkOffTime = preferences.getInt(PREF_DISPLAY_BLINK_OFF, MQTT_CHANNEL_BLINK_OFF_TIME_DEFAULT);
+}
 
 void callback(char *topic, byte *message, unsigned int length)
 {
@@ -34,14 +53,11 @@ void callback(char *topic, byte *message, unsigned int length)
 
   String topicText = String(topic);
 
-  String colorButtonTopicName = "esp32/config/button/color/";
-  String commandButtonTopicName = "esp32/config/button/command/";
-  String rstButtonTopicName = "esp32/config/button/rst/";
-  if (topicText.startsWith(colorButtonTopicName))
+  if (topicText.startsWith(COLOR_BUTTON_TOPIC_NAME))
   {
     preferences.begin(PREF_KEY, false);
 
-    String buttonIdRaw = topicText.substring(colorButtonTopicName.length());
+    String buttonIdRaw = topicText.substring(String(COLOR_BUTTON_TOPIC_NAME).length());
     int buttonId = buttonIdRaw.toInt();
     int color = messageTemp.toInt();
     neotrellis_colors[buttonId] = color;
@@ -55,9 +71,9 @@ void callback(char *topic, byte *message, unsigned int length)
 
     preferences.end();
   }
-  else if (topicText.startsWith(commandButtonTopicName))
+  else if (topicText.startsWith(COMMAND_BUTTON_TOPIC_NAME))
   {
-    String buttonIdRaw = topicText.substring(commandButtonTopicName.length());
+    String buttonIdRaw = topicText.substring(String(COMMAND_BUTTON_TOPIC_NAME).length());
     int buttonId = buttonIdRaw.toInt();
     neotrellis_commands[commandsCount][0] = buttonIdRaw;
     neotrellis_commands[commandsCount][1] = messageTemp;
@@ -88,14 +104,17 @@ void callback(char *topic, byte *message, unsigned int length)
     debug("  Closing preferences...");
     preferences.end();
   }
-  else if (topicText.startsWith(rstButtonTopicName))
+  else if (topicText.startsWith(RESET_BUTTON_TOPIC_NAME))
   {
-    String buttonIdRaw = topicText.substring(commandButtonTopicName.length());
+    String buttonIdRaw = topicText.substring(String(RESET_BUTTON_TOPIC_NAME).length());
     int buttonId = buttonIdRaw.toInt();
 
     Serial.print("Resetting button #" + buttonIdRaw + "...");
     int resultingCommandsCount = commandsCount;
     debugln();
+    debug("  Initializing preferences...");
+    preferences.begin(PREF_KEY, false);
+
     debug("  Searching for stored command listeners...");
     for (int c = 0; c < commandsCount; c++)
     {
@@ -111,17 +130,68 @@ void callback(char *topic, byte *message, unsigned int length)
             debug("    Moving element #" + String(i + 1) + " to position #" + String(i));
             neotrellis_commands[i][0] = neotrellis_commands[i + 1][0]; // Place the next item into the current index
             neotrellis_commands[i][1] = neotrellis_commands[i + 1][1];
+
+            debug("    Converting button pref key...");
+            String prefButtonKeyStr = "bC" + String(i) + "Btn";
+            char buttonIdPrefKey[prefButtonKeyStr.length() + 1];
+            prefButtonKeyStr.toCharArray(buttonIdPrefKey, prefButtonKeyStr.length() + 1);
+
+            debug("    Converting command pref key...");
+            String prefButtonCommandKeyStr = "bC" + String(i) + "Cmd";
+            char buttonCommandPrefKey[prefButtonCommandKeyStr.length() + 1];
+            prefButtonCommandKeyStr.toCharArray(buttonCommandPrefKey, prefButtonCommandKeyStr.length() + 1);
+
+            debug("    Storing changes...");
+            preferences.putString(buttonCommandPrefKey, neotrellis_commands[i + 1][1]);
+            preferences.putInt(buttonIdPrefKey, neotrellis_commands[i + 1][0].toInt());
           }
         resultingCommandsCount--; // Reduce the stored commands counter
         debug("    Now there are " + String(resultingCommandsCount) + " stored command listeners.");
       }
     }
     commandsCount = resultingCommandsCount;
+    preferences.putInt(PREF_COMMAND_COUNT, commandsCount);
 
     debug("  Resetting color...");
     neotrellis_colors[buttonId] = 0xffffff;
 
+    debug("  Closing preferences...");
+    preferences.end();
     ndebug("ok");
+  }
+  else if (topicText.startsWith(CONFIGURE_PARAMETER_TOPIC_NAME))
+  {
+    String parameter = topicText.substring(String(CONFIGURE_PARAMETER_TOPIC_NAME).length());
+
+    Serial.print("Storing \"" + messageTemp + "\" as \"" + parameter + "\"...");
+    debugln();
+    debug("  Initializing preferences...");
+    preferences.begin(PREF_KEY, false);
+
+    if (isValidKey(parameter))
+    {
+      debug("  Parameter is valid, storing...");
+      String keyType = getKeyType(parameter);
+
+      debug("    Converting key...");
+      char prefKey[parameter.length() + 1];
+      parameter.toCharArray(prefKey, parameter.length() + 1);
+
+      debug("    Storing...");
+      if (keyType == PREF_KEY_TYPE_STRING)
+        preferences.putString(prefKey, messageTemp);
+      else if (keyType == PREF_KEY_TYPE_INTEGER)
+        preferences.putInt(prefKey, messageTemp.toInt());
+
+      update_mqtt_cache();
+    }
+    else
+      debug("  Invalid parameter: Key doesn't exist.");
+
+    ndebug("ok");
+
+    debug("  Closing preferences...");
+    preferences.end();
   }
 }
 
@@ -137,6 +207,16 @@ void mqtt_connect()
   mqtt_client.setServer(MQTT_SERVER, MQTT_PORT);
   debug("    Setting callback...");
   mqtt_client.setCallback(callback);
+
+  debug("    Loading preferences...");
+  debug("      Initializing...");
+  preferences.begin(PREF_KEY, false);
+
+  debug_("  ");
+  update_mqtt_cache();
+
+  debug("      Closing...");
+  preferences.end();
 #endif
 }
 
@@ -156,6 +236,7 @@ void mqtt_reconnect()
       mqtt_client.subscribe(MQTT_TOPIC_CONFIGURE_BUTTON_COLOR);
       mqtt_client.subscribe(MQTT_TOPIC_CONFIGURE_BUTTON_COMMAND);
       mqtt_client.subscribe(MQTT_TOPIC_RESET_BUTTON);
+      mqtt_client.subscribe(MQTT_TOPIC_CONFIGURE_PARAMETER);
     }
     else
     {
