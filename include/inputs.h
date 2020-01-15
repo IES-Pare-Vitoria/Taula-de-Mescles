@@ -1,14 +1,4 @@
 
-#define POT_1_PIN 4
-#define POT_2_PIN 15
-#define POT_3_PIN 34
-#define POT_4_PIN 35
-#define POT_5_PIN 26
-
-#define potCount 5
-int potPins[potCount] = { POT_1_PIN, POT_2_PIN, POT_3_PIN, POT_4_PIN, POT_5_PIN };
-int potReadings[potCount];
-
 void makeAnalogReadings(){
   for (int c = 0; c < potCount; c++) {
     int pin = potPins[c];

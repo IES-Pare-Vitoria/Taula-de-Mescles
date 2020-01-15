@@ -16,6 +16,12 @@ void debug(String message) {
 #endif
 }
 
+void debugln(){
+#ifdef DEBUG
+  Serial.println();
+#endif
+}
+
 void debug(const char * format, String parameters) {
 #ifdef DEBUG
   Serial.printf(format, parameters);

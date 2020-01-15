@@ -7,6 +7,8 @@
 #define PREF_ANALOG_READ_RESOLUTION "anReadRes"
 #define PREF_ANALOG_READ_SAMPLES "anReadSam"
 
+#define PREF_COMMAND_COUNT "btnCommandCount"
+
 Preferences preferences;
 
 #define validKeysCount 2

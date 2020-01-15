@@ -9,6 +9,8 @@ AiEsp32RotaryEncoder rotaryEncoder = AiEsp32RotaryEncoder(ROTARY_ENCODER_A_PIN, 
 void rotary_onButtonClick()
 {
     Serial.println("Clicked button");
+    settingMQTTChannel = !settingMQTTChannel;
+    Serial.print("Setting Channel: " + settingMQTTChannel);
 }
 
 void rotary_loop()
@@ -28,19 +30,33 @@ void rotary_loop()
     //for some cases we only want to know if value is increased or decreased (typically for menu items)
     //   if (encoderDelta > 0) Serial.print("+");
     //   if (encoderDelta < 0) Serial.print("-");
+    /*if (settingMQTTChannel)
+    {
+        if (encoderDelta > 0)
+            currentDMXChannel--;
+        else
+            currentDMXChannel++;
+
+        if (currentDMXChannel < 0)
+            currentDMXChannel = 512;
+        else if (currentDMXChannel > 512)
+            currentDMXChannel = 0;
+
+        debug("Current DMX Channel: " + String(currentDMXChannel));
+    }*/
 
     //for other cases we want to know what is current value. Additionally often we only want if something changed
     //example: when using rotary encoder to set termostat temperature, or sound volume etc
 
     //if value is changed compared to our last read
-    if (encoderDelta != 0)
+    if (encoderDelta != 0 && settingMQTTChannel)
     {
         //now we need current value
         int16_t encoderValue = rotaryEncoder.readEncoder();
         //process new value. Here is simple output.
-        currentDMXChannel = (int)encoderValue;
-        Serial.print("Value: ");
-        Serial.println(encoderValue);
+        currentDMXChannel = 512 - (int)encoderValue;
+        
+        debug("Current DMX Channel: " + String(currentDMXChannel));
     }
 }
 
@@ -54,7 +70,7 @@ void encoder_setup()
     debug("ok");
     debug_("    Setting Rotary Encoder's Boundaries...");
     //optionally we can set boundaries and if values should cycle or not
-    rotaryEncoder.setBoundaries(0, 10, true); //minValue, maxValue, cycle values (when max go to min and vice versa)
+    rotaryEncoder.setBoundaries(0, 512, true); //minValue, maxValue, cycle values (when max go to min and vice versa)
     debug("ok");
 
     debug_("    Enabling Rotary Encoder...");

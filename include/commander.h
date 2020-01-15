@@ -1,6 +1,8 @@
-void processSerialCommand(String serialRead) {
+void processSerialCommand(String serialRead)
+{
   serialRead.replace("\n", "");
-  if (serialRead.startsWith("CF")) { // Set config value
+  if (serialRead.startsWith("CF"))
+  { // Set config value
     serialRead = serialRead.substring(3, serialRead.length());
     String key = "";
     for (int c = 0; c < serialRead.length(); c++)
@@ -11,10 +13,12 @@ void processSerialCommand(String serialRead) {
 
     String value = serialRead.substring(key.length() + 1, serialRead.length());
 
-    if (isValidKey(key)) {
+    if (isValidKey(key))
+    {
       String type = getKeyType(key);
 
-      if (type == PREF_KEY_TYPE_INTEGER) {
+      if (type == PREF_KEY_TYPE_INTEGER)
+      {
         int intValue = value.toInt();
         debug("Initializing preferences");
         preferences.begin(PREF_KEY, false);
@@ -34,18 +38,28 @@ void processSerialCommand(String serialRead) {
       }
 
       updateAnalogReadParameters();
-    } else {
+    }
+    else
+    {
       Serial.println("Invalid key sent");
     }
-  } else if (serialRead.startsWith("IP")) {
-    if (WiFi.status() == WL_CONNECTED) {
+  }
+  else if (serialRead.startsWith("IP"))
+  {
+    if (WiFi.status() == WL_CONNECTED)
+    {
       Serial.print("Wifi is connected with IP: ");
-      Serial.println(WiFi.localIP());   //inform user about his IP address
-    } else {
+      Serial.println(WiFi.localIP()); //inform user about his IP address
+    }
+    else
+    {
       Serial.println("WiFi is not connected.");
     }
-  } else if (serialRead.startsWith("AR")) { // Analog Read
-    if(serialRead.length() <= 3){
+  }
+  else if (serialRead.startsWith("AR"))
+  { // Analog Read
+    if (serialRead.length() <= 3)
+    {
       Serial.println("A channel is required. Usage: \"AR [pot_channel]\"");
       return;
     }
@@ -57,8 +71,11 @@ void processSerialCommand(String serialRead) {
     Serial.print(pin);
     Serial.print(": ");
     Serial.println(read);
-  } else if (serialRead.startsWith("DC")) { // DMX Channel
-    if(serialRead.length() <= 3){
+  }
+  else if (serialRead.startsWith("DC"))
+  { // DMX Channel
+    if (serialRead.length() <= 3)
+    {
       Serial.println("A channel is required. Usage: \"DC [channel]\"");
       return;
     }
@@ -67,8 +84,11 @@ void processSerialCommand(String serialRead) {
     currentDMXChannel = channel;
     Serial.print("New DMX Channel: ");
     Serial.println(channel);
-  } else if (serialRead.startsWith("DE")) { // DMX Debug Enable
-    if(serialRead.length() <= 3){
+  }
+  else if (serialRead.startsWith("DE"))
+  { // DMX Debug Enable
+    if (serialRead.length() <= 3)
+    {
       Serial.println("A channel is required. Usage: \"DE [channel]\"");
       return;
     }
@@ -80,4 +100,24 @@ void processSerialCommand(String serialRead) {
     Serial.print(": ");
     Serial.println(debuggingChannel[channel]);
   }
+}
+
+void sendCommand(String command)
+{
+  if (command.startsWith("D")) // D##-## Channel-Value
+  {
+    String channelRaw = "";
+    int sepparatorIndex = command.indexOf('-');
+    String channel = command.substring(1, sepparatorIndex);
+    String value = command.substring(sepparatorIndex + 1, command.length());
+    Serial.println("Writing to DMX #" + channel + " value " + value);
+    debug("  Writing...");
+    dmx.write(channel.toInt(), value.toInt());
+    debug("  Updating...");
+    dmx.update();
+  }
+
+  Serial.print("C-");
+  Serial.println(command);
+  mqtt_publish(MQTT_TOPIC_COMMANDS, command);
 }
