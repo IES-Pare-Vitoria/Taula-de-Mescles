@@ -9,26 +9,16 @@
 #include "AiEsp32RotaryEncoder.h"
 #include "Adafruit_NeoTrellis.h"
 
-#define DEBUG
-
-#define POT_1_PIN 4
-#define POT_2_PIN 15
-#define POT_3_PIN 34
-#define POT_4_PIN 35
-#define POT_5_PIN 26
-
-#define potCount 5
-int potPins[potCount] = { POT_1_PIN, POT_2_PIN, POT_3_PIN, POT_4_PIN, POT_5_PIN };
-int potReadings[potCount];
+#include "consts.h"
 
 #include "debug.h"
 
 #include "pref.h"
 #include "dmx.h"
-#include "mqtt.h"
 #include "inputs.h"
-#include "network.h"
 #include "commander.h"
+#include "mqtt.h"
+#include "network.h"
 #include "display.h"
 #include "neotrellis.h"
 #include "encoder.h"

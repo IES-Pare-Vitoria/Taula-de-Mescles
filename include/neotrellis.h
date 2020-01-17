@@ -75,6 +75,11 @@ void neotrellis_setup()
             int buttonId = preferences.getInt(buttonIdPrefKey);
             String command = preferences.getString(buttonCommandPrefKey, "");
 
+            if(command.length() <= 0){
+                debug("        Invalid command found! Skipping.");
+                continue;
+            }
+
             debug("        Storing loaded command:");
             debug("          Button Id: " + String(buttonId));
             debug("          Button Command: \"" + String(command) + "\"");

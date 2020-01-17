@@ -1,6 +1,4 @@
 
-#define DISPLAY_ADDRESS 0x70
-
 Adafruit_AlphaNum4 alpha4 = Adafruit_AlphaNum4();
 
 unsigned long lastMQTTChannelBlink = 0;

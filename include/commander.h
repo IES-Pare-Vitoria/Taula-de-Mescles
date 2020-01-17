@@ -116,8 +116,63 @@ void sendCommand(String command)
     debug("  Updating...");
     dmx.update();
   }
+  else if (command.startsWith("R")) // R##-## Channel-ChN : Resets the amount of channels specified
+  {
+    String channelRaw = "";
+    int sepparatorIndex = command.indexOf('-');
+    String channel = command.substring(1, sepparatorIndex);
+    String value = command.substring(sepparatorIndex + 1, command.length());
+    int channelInt = channel.toInt();
+    int valueInt = value.toInt();
+    int endingChannel = channelInt + valueInt;
+    for (int c = channelInt; c < endingChannel; c++)
+    {
+      Serial.println("Writing to DMX #" + String(c) + " value 0");
+      debug("  Writing...");
+      dmx.write(c, 0);
+      debug("  Updating...");
+      dmx.update();
+    }
+  }
+  else if (command.startsWith("P"))
+  { // P##-## Channel-Angle : For panning 540º Focus
+    String channelRaw = "";
+    int sepparatorIndex = command.indexOf('-');
+    String channel = command.substring(1, sepparatorIndex);
+    String value = command.substring(sepparatorIndex + 1, command.length());
+    int channelInt = channel.toInt();
+    int valueInt = value.toInt();
+    int parsedValue = (valueInt * 255) / 540;
+
+    Serial.println("Writing to DMX #" + channel + " value " + String(parsedValue));
+    debug("  Writing...");
+    dmx.write(channelInt, parsedValue);
+    debug("  Updating...");
+    dmx.update();
+  }
+  else if (command.startsWith("T"))
+  { // T##-## Channel-Angle : For tilting 180º Focus
+    String channelRaw = "";
+    int sepparatorIndex = command.indexOf('-');
+    String channel = command.substring(1, sepparatorIndex);
+    String value = command.substring(sepparatorIndex + 1, command.length());
+    int channelInt = channel.toInt();
+    int valueInt = value.toInt();
+    int parsedValue = (valueInt * 255) / 180;
+
+    Serial.println("Writing to DMX #" + channel + " value " + String(parsedValue));
+    debug("  Writing...");
+    dmx.write(channelInt, parsedValue);
+    debug("  Updating...");
+    dmx.update();
+  }
+  else if (command.startsWith("W"))
+  { // W## time : For waiting in ms
+    int time = command.substring(1, command.length()).toInt();
+    Serial.println("Waiting for " + String(time) + "ms");
+    delay(time);
+  }
 
   Serial.print("C-");
   Serial.println(command);
-  mqtt_publish(MQTT_TOPIC_COMMANDS, command);
 }

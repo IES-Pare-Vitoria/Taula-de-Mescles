@@ -7,16 +7,6 @@ void makeAnalogReadings(){
   }
 }
 
-void sendAnalogReadValues() {
-  for (int c = 0; c < potCount; c++) {
-    int read = potReadings[c];
-    if (mqtt_client.connected()) {
-      String topic = "esp32/reading/pot" + String(c);
-      mqtt_publish(topic, String(read));
-    }
-  }
-}
-
 void updateAnalogReadParameters() {
   Serial.print("    Setting read parameters from preferences...");
   debug("\n      Initializing preferences");

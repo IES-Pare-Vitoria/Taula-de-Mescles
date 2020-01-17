@@ -1,11 +1,6 @@
-//#define DISABLE_MQTT
-
-#define MQTT_SERVER "192.168.1.94"
-//#define MQTT_SERVER "192.168.200.102"
-#define MQTT_PORT 1010 // 1883
-
 #define MQTT_TOPIC_RESPONSE "esp32/response"
 #define MQTT_TOPIC_COMMANDS "esp32/commands"
+#define MQTT_TOPIC_LISTENERS "esp32/retrieve/listeners/#"
 #define MQTT_TOPIC_TEST "esp32/test"
 #define MQTT_TOPIC_CONFIGURE_BUTTON_COMMAND "esp32/config/button/command/#"
 #define MQTT_TOPIC_CONFIGURE_BUTTON_COLOR "esp32/config/button/color/#"
@@ -17,9 +12,8 @@
 #define COMMAND_BUTTON_TOPIC_NAME "esp32/config/button/command/"
 #define RESET_BUTTON_TOPIC_NAME "esp32/config/button/rst/"
 #define CONFIGURE_PARAMETER_TOPIC_NAME "esp32/config/param/"
+#define GET_LISTENERS_TOPIC_NAME "esp32/retrieve/listeners/"
 
-#define MQTT_CHANNEL_BLINK_ON_TIME_DEFAULT 1000
-#define MQTT_CHANNEL_BLINK_OFF_TIME_DEFAULT 500
 int mqttChannelBlinkOnTime = MQTT_CHANNEL_BLINK_ON_TIME_DEFAULT;
 int mqttChannelBlinkOffTime = MQTT_CHANNEL_BLINK_OFF_TIME_DEFAULT;
 
@@ -29,6 +23,19 @@ String neotrellis_commands[8 * 4][2]; // [ buttonIndex, Command ]
 
 WiFiClient espClient;
 PubSubClient mqtt_client(espClient);
+
+void mqtt_publish(String topic, String message)
+{
+#ifndef DISABLE_MQTT
+  char atopic[topic.length() + 1];
+  topic.toCharArray(atopic, topic.length() + 1);
+
+  char amessage[message.length() + 1];
+  message.toCharArray(amessage, message.length() + 1);
+
+  mqtt_client.publish(atopic, amessage);
+#endif
+}
 
 void update_mqtt_cache()
 {
@@ -193,6 +200,30 @@ void callback(char *topic, byte *message, unsigned int length)
     debug("  Closing preferences...");
     preferences.end();
   }
+  else if (topicText.startsWith(MQTT_TOPIC_COMMANDS))
+  {
+    sendCommand(messageTemp);
+  }
+  else if(topicText.startsWith(GET_LISTENERS_TOPIC_NAME)){
+    // Publishes in MQTT_TOPIC_RESPONSE all the stored data for button.
+    // TODO: Retrieve all set data of focus. Color+Commands: JSON?
+    int buttonId = topicText.substring(String(GET_LISTENERS_TOPIC_NAME).length(), topicText.length()).toInt();
+    String message = "{ \"color\":\"0x" + String(neotrellis_colors[buttonId], HEX) + "\", \"commands\":[";
+    for (int c = 0; c < commandsCount; c++)
+    {
+      int commandButtonId = neotrellis_commands[c][0].toInt();
+      
+      if(buttonId != commandButtonId) continue;
+
+      String commandButtonCmd = neotrellis_commands[c][1];
+      message += "\"" + commandButtonCmd + "\"";
+      if (c < commandsCount - 1)
+        message += ",";
+    }
+    message += "]}";
+    Serial.println("Asked for listeners of button #" + String(buttonId) + ": " + message);
+    mqtt_publish(MQTT_TOPIC_RESPONSE, message);
+  }
 }
 
 void mqtt_connect()
@@ -233,6 +264,8 @@ void mqtt_reconnect()
       Serial.println("connected");
       // Subscribe
       mqtt_client.subscribe(MQTT_TOPIC_TEST);
+      mqtt_client.subscribe(MQTT_TOPIC_COMMANDS);
+      mqtt_client.subscribe(MQTT_TOPIC_LISTENERS);
       mqtt_client.subscribe(MQTT_TOPIC_CONFIGURE_BUTTON_COLOR);
       mqtt_client.subscribe(MQTT_TOPIC_CONFIGURE_BUTTON_COMMAND);
       mqtt_client.subscribe(MQTT_TOPIC_RESET_BUTTON);
@@ -261,15 +294,12 @@ void mqtt_loop()
 #endif
 }
 
-void mqtt_publish(String topic, String message)
-{
-#ifndef DISABLE_MQTT
-  char atopic[topic.length() + 1];
-  topic.toCharArray(atopic, topic.length() + 1);
-
-  char amessage[message.length() + 1];
-  message.toCharArray(amessage, message.length() + 1);
-
-  mqtt_client.publish(atopic, amessage);
-#endif
+void sendAnalogReadValues() {
+  for (int c = 0; c < potCount; c++) {
+    int read = potReadings[c];
+    if (mqtt_client.connected()) {
+      String topic = "esp32/reading/pot" + String(c);
+      mqtt_publish(topic, String(read));
+    }
+  }
 }
