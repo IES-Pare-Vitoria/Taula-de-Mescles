@@ -37,7 +37,9 @@ void processSerialCommand(String serialRead)
         ndebug("ok");
       }
 
+#ifdef updateAnalogReadParameters
       updateAnalogReadParameters();
+#endif
     }
     else
     {
@@ -81,7 +83,9 @@ void processSerialCommand(String serialRead)
     }
     serialRead = serialRead.substring(3, serialRead.length());
     int channel = serialRead.toInt();
+#ifdef currentDMXChannel
     currentDMXChannel = channel;
+#endif
     Serial.print("New DMX Channel: ");
     Serial.println(channel);
   }
@@ -94,11 +98,13 @@ void processSerialCommand(String serialRead)
     }
     serialRead = serialRead.substring(3, serialRead.length());
     int channel = serialRead.toInt();
+#ifdef debuggingChannel
     debuggingChannel[channel] = !debuggingChannel[channel];
     Serial.print("Debugging DMX channel #");
     Serial.print(channel);
     Serial.print(": ");
     Serial.println(debuggingChannel[channel]);
+#endif
   }
 }
 
@@ -106,6 +112,7 @@ void sendCommand(String command)
 {
   if (command.startsWith("D")) // D##-## Channel-Value
   {
+#ifdef dmx
     String channelRaw = "";
     int sepparatorIndex = command.indexOf('-');
     String channel = command.substring(1, sepparatorIndex);
@@ -115,9 +122,13 @@ void sendCommand(String command)
     dmx.write(channel.toInt(), value.toInt());
     debug("  Updating...");
     dmx.update();
+#else
+    Serial.println("DMX disabled");
+#endif
   }
   else if (command.startsWith("R")) // R##-## Channel-ChN : Resets the amount of channels specified
   {
+#ifdef dmx
     String channelRaw = "";
     int sepparatorIndex = command.indexOf('-');
     String channel = command.substring(1, sepparatorIndex);
@@ -133,9 +144,13 @@ void sendCommand(String command)
       debug("  Updating...");
       dmx.update();
     }
+#else
+    Serial.println("DMX disabled");
+#endif
   }
   else if (command.startsWith("P"))
   { // P##-## Channel-Angle : For panning 540º Focus
+#ifdef dmx
     String channelRaw = "";
     int sepparatorIndex = command.indexOf('-');
     String channel = command.substring(1, sepparatorIndex);
@@ -149,9 +164,13 @@ void sendCommand(String command)
     dmx.write(channelInt, parsedValue);
     debug("  Updating...");
     dmx.update();
+#else
+    Serial.println("DMX disabled");
+#endif
   }
   else if (command.startsWith("T"))
   { // T##-## Channel-Angle : For tilting 180º Focus
+#ifdef dmx
     String channelRaw = "";
     int sepparatorIndex = command.indexOf('-');
     String channel = command.substring(1, sepparatorIndex);
@@ -165,6 +184,9 @@ void sendCommand(String command)
     dmx.write(channelInt, parsedValue);
     debug("  Updating...");
     dmx.update();
+#else
+    Serial.println("DMX disabled");
+#endif
   }
   else if (command.startsWith("W"))
   { // W## time : For waiting in ms

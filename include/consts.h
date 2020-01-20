@@ -8,6 +8,8 @@
 #define MQTT_CHANNEL_BLINK_ON_TIME_DEFAULT 1000
 #define MQTT_CHANNEL_BLINK_OFF_TIME_DEFAULT 500
 
+#define MQTT_DEVICE_NAME "ESP32Client"
+
 
 #define DISPLAY_ADDRESS 0x70
 
@@ -37,3 +39,9 @@
 #define potCount 5
 int potPins[potCount] = { POT_1_PIN, POT_2_PIN, POT_3_PIN, POT_4_PIN, POT_5_PIN };
 int potReadings[potCount];
+
+
+#define Y_DIM 8 //number of rows of key
+#define X_DIM 4 //number of columns of keys
+
+#define NEOTRELLIS_COUNT Y_DIM *X_DIM

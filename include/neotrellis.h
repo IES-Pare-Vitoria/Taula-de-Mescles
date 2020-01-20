@@ -1,9 +1,4 @@
 
-#define Y_DIM 8 //number of rows of key
-#define X_DIM 4 //number of columns of keys
-
-#define NEOTRELLIS_COUNT Y_DIM *X_DIM
-
 //create a matrix of trellis panels
 Adafruit_NeoTrellis t_array[Y_DIM / 4][X_DIM / 4] = {
 
@@ -14,6 +9,8 @@ Adafruit_NeoTrellis t_array[Y_DIM / 4][X_DIM / 4] = {
 
 //pass this matrix to the multitrellis object
 Adafruit_MultiTrellis trellis((Adafruit_NeoTrellis *)t_array, Y_DIM / 4, X_DIM / 4);
+
+bool neotrellisInitialized = false;
 
 //define a callback for key presses
 TrellisCallback blink(keyEvent evt)
@@ -38,15 +35,21 @@ TrellisCallback blink(keyEvent evt)
 
 void neotrellis_setup()
 {
+#ifdef display_print
     display_print("NEOT");
+#endif
 
     Serial.print("  Initializing Neotrellis...");
     if (trellis.begin())
+    {
         Serial.println("ok");
+        neotrellisInitialized = true;
+    }
     else
     {
         Serial.println("failed to begin trellis");
-        return;
+        neotrellisInitialized = false;
+        //return;
     }
 
     Serial.print("  Loading parameters from preferences...");
@@ -75,7 +78,8 @@ void neotrellis_setup()
             int buttonId = preferences.getInt(buttonIdPrefKey);
             String command = preferences.getString(buttonCommandPrefKey, "");
 
-            if(command.length() <= 0){
+            if (command.length() <= 0)
+            {
                 debug("        Invalid command found! Skipping.");
                 continue;
             }
@@ -111,30 +115,34 @@ void neotrellis_setup()
     preferences.end();
     ndebug("ok");
 
-    for (int c = 0; c < NEOTRELLIS_COUNT; c++)
-        if (neotrellis_colors[c] <= 0)
-            neotrellis_colors[c] = 0xFFFFFF;
-
-    for (int c = 0; c < NEOTRELLIS_COUNT; c++)
+    if (neotrellisInitialized)
     {
-        trellis.activateKey(c, SEESAW_KEYPAD_EDGE_RISING, true);
-        trellis.activateKey(c, SEESAW_KEYPAD_EDGE_FALLING, true);
-        trellis.registerCallback(c, blink);
-        trellis.setPixelColor(c, neotrellis_colors[c]);
-        if (c > 0)
-            trellis.setPixelColor(c - 1, 0); // Turn off previous Pixel
-        trellis.show();
-        delay(50);
-    }
+        for (int c = 0; c < NEOTRELLIS_COUNT; c++)
+            if (neotrellis_colors[c] <= 0)
+                neotrellis_colors[c] = 0xFFFFFF;
 
-    for (int c = 0; c < NEOTRELLIS_COUNT; c++)
-    {
-        trellis.setPixelColor(c, 0);
-        trellis.show();
+        for (int c = 0; c < NEOTRELLIS_COUNT; c++)
+        {
+            trellis.activateKey(c, SEESAW_KEYPAD_EDGE_RISING, true);
+            trellis.activateKey(c, SEESAW_KEYPAD_EDGE_FALLING, true);
+            trellis.registerCallback(c, blink);
+            trellis.setPixelColor(c, neotrellis_colors[c]);
+            if (c > 0)
+                trellis.setPixelColor(c - 1, 0); // Turn off previous Pixel
+            trellis.show();
+            delay(50);
+        }
+
+        for (int c = 0; c < NEOTRELLIS_COUNT; c++)
+        {
+            trellis.setPixelColor(c, 0);
+            trellis.show();
+        }
     }
 }
 
 void neotrellis_loop()
 {
+    if(neotrellisInitialized)
     trellis.read();
 }
