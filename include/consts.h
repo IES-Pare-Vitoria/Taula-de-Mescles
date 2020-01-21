@@ -1,6 +1,7 @@
 //#define DISABLE_MQTT
 
 //#define MQTT_SERVER "192.168.0.101"
+
 #define MQTT_SERVER "192.168.1.94"
 //#define MQTT_SERVER "192.168.200.102"
 #define MQTT_PORT 1010 // 1883

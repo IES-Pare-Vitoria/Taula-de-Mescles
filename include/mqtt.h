@@ -3,6 +3,7 @@
 #define MQTT_TOPIC_LISTENERS "esp32/retrieve/listeners/#"
 #define MQTT_TOPIC_LISTENERS_ALL "esp32/retrieve/all_listeners"
 #define MQTT_TOPIC_BUTTONS_COUNT "esp32/retrieve/buttons"
+#define MQTT_TOPIC_GET_IP "esp32/retrieve/ip"
 #define MQTT_TOPIC_TEST "esp32/test"
 #define MQTT_TOPIC_CONFIGURE_BUTTON_COMMAND "esp32/config/button/command/#"
 #define MQTT_TOPIC_CONFIGURE_BUTTON_COLOR "esp32/config/button/color/#"
@@ -273,6 +274,12 @@ void callback(char *topic, byte *message, unsigned int length)
   {
     mqtt_publish(MQTT_TOPIC_RESPONSE, "{ \"buttons_count\":\"" + String(NEOTRELLIS_COUNT) + "\" }");
   }
+  else if (topicText.startsWith(MQTT_TOPIC_GET_IP))
+  {
+    IPAddress ip = WiFi.localIP();
+    String ipStr = toString(ip);
+    mqtt_publish(MQTT_TOPIC_RESPONSE, "{ \"ip\":\"" + ipStr + "\" }");
+  }
 }
 
 void mqtt_connect()
@@ -321,6 +328,7 @@ void mqtt_reconnect()
       mqtt_client.subscribe(MQTT_TOPIC_CONFIGURE_PARAMETER);
       mqtt_client.subscribe(MQTT_TOPIC_BUTTONS_COUNT);
       mqtt_client.subscribe(MQTT_TOPIC_LISTENERS_ALL);
+      mqtt_client.subscribe(MQTT_TOPIC_GET_IP);
     }
     else
     {
